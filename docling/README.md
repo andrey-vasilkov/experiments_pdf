@@ -1,1 +1,8 @@
-# experiments_pdf
+output.md прочитанный файл
+
+coordinates.json координаты данных
+
+page_nn_bbox страницы файла с выделенными ячейками
+
+compare_page сравнение табличных данных и данных из файла
+
