@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Оборудование: иерархия</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            color: #1e293b;
+        }
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .sub {
+            color: #475569;
+            margin-bottom: 24px;
+            border-left: 4px solid #3b82f6;
+            padding-left: 16px;
+        }
+        .card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+            padding: 20px 24px;
+            margin-bottom: 28px;
+            transition: all 0.2s;
+        }
+        .upload-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: flex-end;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+        .file-input-group {
+            flex: 2;
+            min-width: 260px;
+        }
+        label {
+            font-weight: 600;
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+            color: #334155;
+        }
+        input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 14px;
+            background: #f8fafc;
+        }
+        button {
+            background: #3b82f6;
+            border: none;
+            color: white;
+            padding: 10px 24px;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.9rem;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        button:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+        .btn-outline {
+            background: white;
+            border: 1px solid #cbd5e1;
+            color: #1e293b;
+            box-shadow: none;
+        }
+        .btn-outline:hover {
+            background: #f1f5f9;
+            transform: none;
+        }
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .view-switch {
+            display: flex;
+            gap: 10px;
+        }
+        .view-btn {
+            background: #e2e8f0;
+            color: #1e293b;
+            box-shadow: none;
+            padding: 6px 18px;
+        }
+        .view-btn.active {
+            background: #3b82f6;
+            color: white;
+        }
+        .export-buttons {
+            display: flex;
+            gap: 12px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            display: block;
+        }
+        th, td {
+            border: 1px solid #e2e8f0;
+            padding: 10px 12px;
+            text-align: left;
+            vertical-align: top;
+        }
+        th {
+            background: #f1f5f9;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+        .tree-view {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            max-height: 600px;
+            overflow-y: auto;
+            padding: 8px 4px;
+        }
+        .tree-node {
+            margin-left: 20px;
+            list-style: none;
+            position: relative;
+        }
+        .tree-root {
+            padding-left: 0;
+        }
+        .tree-item {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            flex-wrap: wrap;
+            padding: 4px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .tree-model {
+            background: #dbeafe;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-family: monospace;
+            color: #1e40af;
+        }
+        .badge-level {
+            font-size: 0.7rem;
+            background: #eef2ff;
+            padding: 2px 6px;
+            border-radius: 16px;
+            color: #2563eb;
+        }
+        .stats {
+            font-size: 0.8rem;
+            background: #f8fafc;
+            padding: 6px 12px;
+            border-radius: 40px;
+            display: inline-block;
+        }
+        hr {
+            margin: 16px 0;
+        }
+        .footer {
+            text-align: center;
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-top: 20px;
+        }
+        @media (max-width: 700px) {
+            body { padding: 12px; }
+            .card { padding: 16px; }
+            th, td { padding: 6px 8px; font-size: 0.75rem; }
+        }
+        .scroll-table {
+            overflow-x: auto;
+            max-height: 550px;
+        }
+    </style>
+    <!-- SheetJS для чтения Excel -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+<div class="container">
+    <h1>🏭 Иерархия оборудования</h1>
+    <div class="sub">Загрузка Excel → Таблица / Дерево → JSON / CSV</div>
+
+    <div class="card">
+        <div class="upload-area">
+            <div class="file-input-group">
+                <label>📂 Загрузить Excel файл (.xlsx, .xls)</label>
+                <input type="file" id="excelInput" accept=".xlsx, .xls, .csv">
+            </div>
+            <div>
+                <label>📌 Пример</label>
+                <button id="loadExampleBtn" class="btn-outline" type="button">🔁 Загрузить пример (встроенный)</button>
+            </div>
+        </div>
+
+        <div class="toolbar">
+            <div class="view-switch">
+                <button id="tableViewBtn" class="view-btn active">📋 Таблица</button>
+                <button id="treeViewBtn" class="view-btn">🌳 Дерево</button>
+            </div>
+            <div class="export-buttons">
+                <button id="exportJsonBtn" class="btn-outline">💾 Сохранить JSON</button>
+                <button id="exportCsvBtn" class="btn-outline">📎 Сохранить CSV</button>
+            </div>
+        </div>
+
+        <div id="statsPanel" class="stats">📊 Нет данных</div>
+        <div id="contentArea">
+            <div class="scroll-table" id="tableView">
+                <table>
+                    <thead>
+                        <tr><th>Уровень 1</th><th>Уровень 2</th><th>Уровень 3</th><th>Уровень 4</th><th>Уровень 5</th><th>Уровень 6</th><th>Уровень 7</th><th>Модель</th></tr>
+                    </thead>
+                    <tbody><tr><td colspan="8">Загрузите файл или нажмите "Пример"</td></tr></tbody>
+                </table>
+            </div>
+            <div id="treeView" style="display: none;" class="tree-view">
+                <!-- дерево будет здесь -->
+            </div>
+        </div>
+    </div>
+    <div class="footer">
+        ⚙️ Уровни: от 1 до 7 + модель. Поддерживается иерархия "Северал → Городская ВС → ..." и модели оборудования.
+    </div>
+</div>
+
+<script>
+    // Глобальные данные: массив строк (объектов) с полями level1..level7, model
+    let hierarchyData = []; // каждый объект: { level1, level2, ..., level7, model }
+
+    // Столбцы (как в файле)
+    const LEVEL_COLS = ['level1', 'level2', 'level3', 'level4', 'level5', 'level6', 'level7'];
+    const MODEL_COL = 'model';
+
+    // ======================= ПАРСИНГ EXCEL =======================
+    function parseExcelToHierarchy(workbook) {
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+        if (!rawData || rawData.length < 2) return [];
+
+        const headerRow = rawData[0];
+        // Определим индексы колонок по заголовкам "Уровень 1", "Уровень 2" ... "Модель"
+        const colIndex = {
+            level1: -1, level2: -1, level3: -1, level4: -1, level5: -1, level6: -1, level7: -1, model: -1
+        };
+        for (let i = 0; i < headerRow.length; i++) {
+            const cell = (headerRow[i] || "").toString().trim();
+            if (cell === "Уровень 1") colIndex.level1 = i;
+            else if (cell === "Уровень 2") colIndex.level2 = i;
+            else if (cell === "Уровень 3") colIndex.level3 = i;
+            else if (cell === "Уровень 4") colIndex.level4 = i;
+            else if (cell === "Уровень 5") colIndex.level5 = i;
+            else if (cell === "Уровень 6") colIndex.level6 = i;
+            else if (cell === "Уровень 7") colIndex.level7 = i;
+            else if (cell === "Модель") colIndex.model = i;
+        }
+        // проверка, что хотя бы level1 найден
+        if (colIndex.level1 === -1) {
+            console.warn("Заголовки не найдены, пробуем авто-определение по первой строке");
+            // fallback: если нет - предположим структуру как в примере: первые 8 колонок
+            for (let i = 0; i < Math.min(8, headerRow.length); i++) {
+                const h = (headerRow[i] || "").toString();
+                if (h.includes("Уровень 1")) colIndex.level1 = i;
+                if (h.includes("Уровень 2")) colIndex.level2 = i;
+                if (h.includes("Уровень 3")) colIndex.level3 = i;
+                if (h.includes("Уровень 4")) colIndex.level4 = i;
+                if (h.includes("Уровень 5")) colIndex.level5 = i;
+                if (h.includes("Уровень 6")) colIndex.level6 = i;
+                if (h.includes("Уровень 7")) colIndex.level7 = i;
+                if (h.includes("Модель")) colIndex.model = i;
+            }
+        }
+        // если все еще нет - принудительно по позициям A-H (0-7)
+        if (colIndex.level1 === -1) colIndex.level1 = 0;
+        if (colIndex.level2 === -1) colIndex.level2 = 1;
+        if (colIndex.level3 === -1) colIndex.level3 = 2;
+        if (colIndex.level4 === -1) colIndex.level4 = 3;
+        if (colIndex.level5 === -1) colIndex.level5 = 4;
+        if (colIndex.level6 === -1) colIndex.level6 = 5;
+        if (colIndex.level7 === -1) colIndex.level7 = 6;
+        if (colIndex.model === -1) colIndex.model = 7;
+
+        const rows = [];
+        for (let r = 1; r < rawData.length; r++) {
+            const row = rawData[r];
+            if (!row || row.length === 0) continue;
+            const level1 = (row[colIndex.level1] || "").toString().trim();
+            // если первая ячейка пустая и все последующие пустые - пропускаем
+            if (level1 === "" && (row[colIndex.level2] || "") === "" && (row[colIndex.model] || "") === "") continue;
+            
+            const entry = {
+                level1: level1 || "",
+                level2: (row[colIndex.level2] || "").toString().trim(),
+                level3: (row[colIndex.level3] || "").toString().trim(),
+                level4: (row[colIndex.level4] || "").toString().trim(),
+                level5: (row[colIndex.level5] || "").toString().trim(),
+                level6: (row[colIndex.level6] || "").toString().trim(),
+                level7: (row[colIndex.level7] || "").toString().trim(),
+                model: (row[colIndex.model] || "").toString().trim()
+            };
+            rows.push(entry);
+        }
+        // дополнительная фильтрация: убираем полностью пустые записи
+        return rows.filter(r => r.level1 || r.level2 || r.level3 || r.level4 || r.level5 || r.level6 || r.level7 || r.model);
+    }
+
+    // загрузка из файла
+    function loadFromExcelFile(file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const parsed = parseExcelToHierarchy(workbook);
+            if (parsed.length === 0) {
+                alert("Не удалось распарсить данные. Проверьте заголовки: Уровень 1..Уровень 7, Модель");
+            }
+            hierarchyData = parsed;
+            renderCurrentView();
+            updateStats();
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    // встроенный пример (из вашего файла конвертированный)
+    function loadExampleData() {
+        // Создаём встроенный набор данных, соответствующий иерархии из excel (первые ~30 записей)
+        const exampleRaw = [
+            ["Северал","","","","","","",""],
+            ["Северал","Городская ВС","","","","","",""],
+            ["Северал","Городская ВС","Цех ТЭЦ","","","","",""],
+            ["Северал","Городская ВС","Цех ТЭЦ","Участок водосбережения","","","",""],
+            ["Северал","Городская ВС","Цех ТЭЦ","Участок водосбережения","Линия подачи","","",""],
+            ["Северал","Городская ВС","Цех ТЭЦ","Участок водосбережения","Линия подачи","Агрегат насосный 1","",""],
+            ["Северал","Городская ВС","Цех ТЭЦ","Участок водосбережения","Линия подачи","Агрегат насосный 1","Насос подачи 1",""],
+            ["Северал","Городская ВС","Цех ТЭЦ","Участок водосбережения","Линия подачи","Агрегат насосный 1","Насос подачи 1","Д 160 112/а"],
+            ["Северал","Городская ВС","Цех ТЭЦ","Участок водосбережения","Линия подачи","Агрегат насосный 1","Двигатель 1",""],
+            ["Северал","Городская ВС","Цех ТЭЦ","Участок водосбережения","Линия подачи","Агрегат насосный 1","Двигатель 1","ДК 112-80-2,2_220"],
+            ["Северал","Городская ВС","Цех ТЭЦ","Участок водосбережения","Линия подачи","Агрегат насосный 1","Фильтр 1",""],
+            ["Северал","Городская ВС","Цех ТЭЦ","Участок водосбережения","Линия подачи","Агрегат насосный 1","Фильтр 1","FMA 2004"],
+            ["Северал","Городская ВС","Цех ТЭЦ","Участок водосбережения","Линия подачи","Агрегат насосный 2","",""],
+            ["Северал","Городская ВС","Цех ТЭЦ","Участок водосбережения","Линия подачи","Агрегат насосный 2","Насос подачи 2",""],
+            ["Северал","Городская ВС","Цех ТЭЦ","Участок водосбережения","Линия подачи","Агрегат насосный 2","Насос подачи 2","Д 200-36/Б"],
+            ["Северал","Городская ВС","Цех ТЭЦ","Участок водосбережения","Линия подачи","Агрегат насосный 2","Двигатель 2","ДК 112-90-3,2_220"],
+            ["Северал","Городская ВС","Цех ТЭЦ","Участок водосбережения","Линия подачи","Агрегат насосный 2","Фильтр 2","FMA 2004"],
+            ["Северал","Городская ВС","Цех ТЭЦ","Участок охлаждения","","","",""],
+            ["Северал","Городская ВС","Цех ТЭЦ","Участок охлаждения","Холодильное отделение","Чиллерная","Чиллер","MX -04A-PAC/1"],
+            ["Северал","Городская ВС","Цех ТЭЦ","Участок охлаждения","Компрессорное отделение","Копрессорная","Компрессор 1","GA 37-7,5P"],
+            ["Северал","Городская ВС","Цех ТЭЦ","Участок очистки","Система сепарации","Установка сепарационная","Сепаратор 1","SEPREMIUM 30/RS"],
+            ["Северал","Городская ВС","Цех ТЭЦ","Мастерская","Станки","Токарные","","MML 2550-M"]
+        ];
+        const structured = exampleRaw.map(row => ({
+            level1: row[0] || "",
+            level2: row[1] || "",
+            level3: row[2] || "",
+            level4: row[3] || "",
+            level5: row[4] || "",
+            level6: row[5] || "",
+            level7: row[6] || "",
+            model: row[7] || ""
+        }));
+        hierarchyData = structured;
+        renderCurrentView();
+        updateStats();
+    }
+
+    // отображение таблицы
+    function renderTableView() {
+        const container = document.getElementById('tableView');
+        if (!container) return;
+        if (!hierarchyData.length) {
+            container.innerHTML = `<div class="scroll-table"><table><thead><tr>${LEVEL_COLS.map(l => `<th>${l.toUpperCase()}</th>`).join('')}<th>Модель</th></tr></thead><tbody><tr><td colspan="8">Нет данных</td></tr></tbody></table></div>`;
+            return;
+        }
+        const headers = [...LEVEL_COLS.map(c => c.replace('level', 'Уровень ').toUpperCase()), MODEL_COL.toUpperCase()];
+        let html = `<div class="scroll-table"><table><thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>`;
+        for (let row of hierarchyData) {
+            html += `<tr>`;
+            for (let lvl of LEVEL_COLS) {
+                html += `<td>${escapeHtml(row[lvl] || '')}</td>`;
+            }
+            html += `<td>${escapeHtml(row.model || '')}</td>`;
+            html += `</tr>`;
+        }
+        html += `</tbody></table></div>`;
+        container.innerHTML = html;
+    }
+
+    // Построение дерева на основе иерархических связей
+    function buildTree() {
+        const root = { name: "Оборудование", children: [], fullPath: "" };
+        const pathMap = new Map(); // key: path string, value: node
+
+        for (let item of hierarchyData) {
+            const levels = [item.level1, item.level2, item.level3, item.level4, item.level5, item.level6, item.level7].filter(lvl => lvl && lvl.trim() !== "");
+            let currentParent = root;
+            let currentPath = "";
+            for (let i = 0; i < levels.length; i++) {
+                const levelName = levels[i];
+                const newPath = currentPath ? currentPath + " / " + levelName : levelName;
+                let node = pathMap.get(newPath);
+                if (!node) {
+                    node = { name: levelName, children: [], fullPath: newPath, levelIndex: i+1 };
+                    pathMap.set(newPath, node);
+                    // добавить к текущему родителю если нет такого же имени
+                    if (!currentParent.children.some(c => c.name === levelName)) {
+                        currentParent.children.push(node);
+                    } else {
+                        // если уже существует, используем существующий
+                        node = currentParent.children.find(c => c.name === levelName);
+                    }
+                }
+                currentParent = node;
+                currentPath = newPath;
+            }
+            // Добавляем модель как лист, если есть модель
+            if (item.model && item.model.trim() !== "") {
+                const modelNode = { name: `🔧 ${item.model}`, children: [], isModel: true, modelValue: item.model };
+                if (!currentParent.children.some(c => c.isModel && c.modelValue === item.model)) {
+                    currentParent.children.push(modelNode);
+                }
+            }
+        }
+        return root;
+    }
+
+    function renderTreeView() {
+        const container = document.getElementById('treeView');
+        if (!container) return;
+        if (!hierarchyData.length) {
+            container.innerHTML = `<div class="tree-view">Нет данных для дерева</div>`;
+            return;
+        }
+        const treeRoot = buildTree();
+        function renderNode(node, level = 0) {
+            let indent = "&nbsp;&nbsp;".repeat(level);
+            let bullet = level === 0 ? "📁 " : "├─ ";
+            let styleClass = node.isModel ? "tree-model" : "";
+            let nameDisplay = node.isModel ? node.name : `<strong>${escapeHtml(node.name)}</strong>`;
+            let html = `<div class="tree-node" style="margin-left: ${level*20}px;">`;
+            html += `<div class="tree-item">${bullet} ${nameDisplay} ${!node.isModel && node.levelIndex ? `<span class="badge-level">ур.${node.levelIndex}</span>` : ''}</div>`;
+            if (node.children && node.children.length) {
+                for (let child of node.children) {
+                    html += renderNode(child, level + 1);
+                }
+            }
+            html += `</div>`;
+            return html;
+        }
+        let treeHtml = `<div class="tree-root">`;
+        for (let child of treeRoot.children) {
+            treeHtml += renderNode(child, 0);
+        }
+        treeHtml += `</div>`;
+        container.innerHTML = treeHtml;
+    }
+
+    let currentView = 'table'; // table or tree
+    function renderCurrentView() {
+        if (currentView === 'table') {
+            document.getElementById('tableView').style.display = 'block';
+            document.getElementById('treeView').style.display = 'none';
+            renderTableView();
+        } else {
+            document.getElementById('tableView').style.display = 'none';
+            document.getElementById('treeView').style.display = 'block';
+            renderTreeView();
+        }
+    }
+
+    function updateStats() {
+        const statsSpan = document.getElementById('statsPanel');
+        if (hierarchyData.length) {
+            const modelCount = hierarchyData.filter(d => d.model && d.model.trim() !== "").length;
+            statsSpan.innerHTML = `📊 Всего строк: ${hierarchyData.length} | Моделей: ${modelCount} | Уровней: 7`;
+        } else {
+            statsSpan.innerHTML = `📊 Нет данных. Загрузите Excel или пример.`;
+        }
+    }
+
+    // Экспорт
+    function exportToJSON() {
+        if (!hierarchyData.length) { alert("Нет данных для экспорта"); return; }
+        const dataStr = JSON.stringify(hierarchyData, null, 2);
+        downloadFile(dataStr, "hierarchy_data.json", "application/json");
+    }
+    function exportToCSV() {
+        if (!hierarchyData.length) { alert("Нет данных для экспорта"); return; }
+        const headers = [...LEVEL_COLS, MODEL_COL];
+        const rows = hierarchyData.map(row => headers.map(h => row[h] || "").join(","));
+        const csvContent = [headers.join(","), ...rows].join("\n");
+        downloadFile("\uFEFF" + csvContent, "hierarchy_data.csv", "text/csv;charset=utf-8;");
+    }
+    function downloadFile(content, fileName, mimeType) {
+        const blob = new Blob([content], { type: mimeType });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = fileName;
+        link.click();
+        URL.revokeObjectURL(link.href);
+    }
+
+    function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+
+    // Event listeners
+    document.getElementById('excelInput').addEventListener('change', (e) => {
+        if(e.target.files.length) loadFromExcelFile(e.target.files[0]);
+    });
+    document.getElementById('loadExampleBtn').addEventListener('click', () => loadExampleData());
+    document.getElementById('tableViewBtn').addEventListener('click', () => { currentView = 'table'; document.getElementById('tableViewBtn').classList.add('active'); document.getElementById('treeViewBtn').classList.remove('active'); renderCurrentView(); });
+    document.getElementById('treeViewBtn').addEventListener('click', () => { currentView = 'tree'; document.getElementById('treeViewBtn').classList.add('active'); document.getElementById('tableViewBtn').classList.remove('active'); renderCurrentView(); });
+    document.getElementById('exportJsonBtn').addEventListener('click', exportToJSON);
+    document.getElementById('exportCsvBtn').addEventListener('click', exportToCSV);
+
+    // автозагрузка примера при старте (показать структуру)
+    loadExampleData();
+</script>
+</body>
+</html>
